@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fill Email 1 Template</title>
+</head>
+<body>
+    <h1>Fill the Email 1 Template</h1>
+    <form action="/generate-email" method="POST">
+        <!-- Hardcoded fields for email1 -->
+        <label for="TO">To:</label>
+        <input type="email" name="TO" id="TO" required><br>
+
+        <label for="CC">CC:</label>
+        <input type="email" name="CC" id="CC"><br>
+
+        <label for="SUBJECT">Subject:</label>
+        <input type="text" name="SUBJECT" id="SUBJECT" placeholder="Help Requested on [DATE]" required><br>
+
+        <label for="PROJECT_ID">Project ID:</label>
+        <input type="text" name="PROJECT_ID" id="PROJECT_ID" required><br>
+
+        <label for="DATE">Date:</label>
+        <input type="date" name="DATE" id="DATE" required><br>
+
+        <label for="SENDER">Sender:</label>
+        <input type="text" name="SENDER" id="SENDER" required><br>
+
+        <button type="submit">Generate Email</button>
+    </form>
+</body>
+</html>
