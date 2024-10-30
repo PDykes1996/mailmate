@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parse Template</title>
+</head>
+<body>
+    <h1>Parsed Input Fields</h1>
+    <form action="/generate-email" method="post">
+        <% fields.forEach(field => { %>
+            <label for="<%= field.key %>"><%= field.key %>:</label>
+            <input type="text" id="<%= field.key %>" name="<%= field.key %>" value="<%= field.value %>" />
+            <br />
+        <% }) %>
+        <button type="submit">Generate Email</button>
+    </form>
+</body>
+</html>

@@ -5,30 +5,63 @@ const app = express();
 const port = 3000;
 
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 
 // Directory for email templates
-const templatePath = path.join(__dirname, 'email_templates', 'test_email1.txt');
+const templatesPath = path.join(__dirname, 'email_templates');
+
 
 // Home route (hardcoded to go directly to email1)
 app.get('/', (req, res) => {
-  res.render('home');
-});
-
-// Route to load the form (hardcoded for email1)
-app.get('/email1', (req, res) => {
-  fs.readFile(templatePath, 'utf-8', (err, content) => {
+  fs.readdir(templatesPath, (err, files) => {
     if (err) {
-      console.error('Error reading the template:', err.message);
-      return res.status(404).send('Template not found or unable to read the template.');
+      return res.status(500).send('Failed to load templates');
     }
 
-    // Define hardcoded fields from the template (no dynamic placeholders)
-    const fields = ['TO', 'CC', 'SUBJECT', 'PROJECT_ID', 'DATE', 'SENDER'];
-    res.render('email1', { fields });
-  });
+    const textFiles = files.filter(file => path.extname(file) === '.txt');
+
+  res.render('home', {textFiles});
+  })
 });
 
+//this route will use regex on specified text file to match curly brace enclosed data and create fields based on it
+app.get('/parseTemplate/:filename', (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.join(templatesPath, filename);
+
+  //make sure file exists and is .txt
+  if (path.extname(filename) === '.txt') {
+    fs.readFile(filePath, 'utf-8', (err, data) => {
+      if (err) {
+        return res.status(404).send('File not found or unable to read');
+      }
+      
+      //find curly braces
+      const regex = /\{(.*?)\}/gs;
+      const matches = [...data.matchAll(regex)];
+      console.log(matches)
+      //split data into key (TO, CC, etc) and value pair
+      const fields = matches.map(match => {
+        const content = match[1].trim();
+        const [key, value] = content.split(':');
+        //console.log(key);
+        //console.log(value);
+        return {
+          key: key.trim(),
+          value: value ? value.replace(/['"]/g, '').trim() : ''
+        };
+      });
+
+      //pass key value pairs to render page for form creation
+      res.render('parseTemplate', { fields });
+    });
+  } else {
+    res.status(400).send('Invalid file type');
+  }
+});
+
+/* Mailto link generation must be redone for this version of code
 // Route to generate the mailto link from hardcoded email1 template
 app.post('/generate-email', (req, res) => {
   const { TO, CC, SUBJECT, PROJECT_ID, DATE, SENDER } = req.body;
@@ -47,9 +80,11 @@ ${SENDER}`;
   const mailtoLink = `mailto:${encodeURIComponent(TO)}?cc=${encodeURIComponent(CC)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   
   res.redirect(mailtoLink);
-});
+});*/
+
 
 // Start the server
 app.listen(port, () => {
   console.log(`App listening at http://localhost:${port}`);
 });
+
