@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Select Email Template</title>
+  <title>Parse Template</title>
   <style>
     /* General Styles */
     body {
@@ -55,28 +55,19 @@
       border-color: #7986cb;
     }
   </style>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Select Email Template</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parse Template</title>
 </head>
 <body>
-  <h1>Select an Email Template</h1>
-  <div id="buttons">
-    <% textFiles.forEach(file => { %>
-        <a href="/parseTemplate/<%= file %>">
-        <button><%= file %></button>
-        </a>
-    <% }) %>
-  </div>
-  <h1>Add Custom Template</h1>
-  <div id="buttons">
-      <a href ="/upload">
-        <button>Add Existing Template</button>
-      </a>
-  </div>
-</body>
-</html>
+    <h1>Parsed Input Fields</h1>
+    <form action="/generate-email" method="post">
+        <% fields.forEach(field => { %>
+            <label for="<%= field.key %>"><%= field.key %>:</label>
+            <input type="text" id="<%= field.key %>" name="<%= field.key %>" value="<%= field.value %>" />
+            <br />
+        <% }) %>
+        <button type="submit">Generate Email</button>
+    </form>
 </body>
 </html>
