@@ -1,4 +1,5 @@
 const express = require('express');
+const fileUpload = require('express-fileupload');
 const fs = require('fs');
 const path = require('path');
 const app = express();
@@ -7,6 +8,7 @@ const port = 3000;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
+app.use(fileUpload());
 
 // Directory for email templates
 const templatesPath = path.join(__dirname, 'email_templates');
@@ -82,6 +84,33 @@ ${SENDER}`;
   res.redirect(mailtoLink);
 });*/
 
+//Upload Logic
+app.get('/upload', (req, res) => {
+  res.render('upload'); // This form should post to '/upload' route
+});
+
+// Route to handle file upload
+app.post('/upload', (req, res) => {
+  if (!req.files || !req.files.templateFile) {
+    return res.status(400).send('No file uploaded.');
+  }
+
+  const file = req.files.templateFile;
+  const uploadPath = path.join(templatesPath, file.name);
+
+  // Check if file is a .txt file
+  if (path.extname(file.name) !== '.txt') {
+    return res.status(400).send('Invalid file type. Only .txt files are allowed.');
+  }
+
+  // Save the file
+  file.mv(uploadPath, (err) => {
+    if (err) {
+      return res.status(500).send('Failed to save file.');
+    }
+    res.redirect('/'); // Redirect back to home to see the uploaded file in the list
+  });
+});
 
 // Start the server
 app.listen(port, () => {
