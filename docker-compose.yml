@@ -1,0 +1,11 @@
+services:
+  mailmate:
+    build:
+      context: ./.
+      target: mailmate
+    ports:
+      - "3000:3000"
+    command: npm run dev
+    restart: unless-stopped
+    volumes:
+      - "./:/home/node/"
