@@ -1,5 +1,0 @@
-{TO : ''}
-{FROM : ''}
-{CC : ''}
-{BODY : ''}
-{TESTING: ''}
