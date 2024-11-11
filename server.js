@@ -38,51 +38,160 @@ app.get('/parseTemplate/:filename', (req, res) => {
       if (err) {
         return res.status(404).send('File not found or unable to read');
       }
+
+      const lines = data.split('\n');
       
-      //find curly braces
-      const regex = /\{(.*?)\}/gs;
-      const matches = [...data.matchAll(regex)];
-      console.log(matches)
-      //split data into key (TO, CC, etc) and value pair
-      const fields = matches.map(match => {
-        const content = match[1].trim();
-        const [key, value] = content.split(':');
-        //console.log(key);
-        //console.log(value);
-        return {
-          key: key.trim(),
-          value: value ? value.replace(/['"]/g, '').trim() : ''
-        };
+      let staticMailData = {
+        TO: '',
+        CC: '',
+        BCC: '',
+      };
+      let subject = [];
+      let body = [];
+      
+      lines.forEach(line => {
+        // Split by first colon
+        const colonIndex = line.indexOf(':');
+        if (colonIndex === -1) {
+          return;
+        }
+        const key = line.slice(0, colonIndex);
+        const value = line.slice(colonIndex + 1);
+        if (key && value) {
+          const trimmedKey = key.trim().toUpperCase();
+          let trimmedValue = value.trim();
+          if (trimmedValue.startsWith("'") && trimmedValue.endsWith("'")) {
+            trimmedValue = trimmedValue.slice(1, -1);
+          }
+          if (staticMailData.hasOwnProperty(trimmedKey)) {
+            staticMailData[trimmedKey] = trimmedValue;
+          }
+          if (trimmedKey === 'SUBJECT') {
+            subject.push(trimmedValue);
+          }
+        }
       });
 
+      // Parse each line to extract BODY
+      let bodyFlag = false;
+      lines.forEach(line => {
+        if (line.trim().toUpperCase() === 'BODY:') {
+          bodyFlag = true;
+          return;
+        }
+        if (bodyFlag) {
+          body.push(line);
+        }
+      }
+      );
+
+      subjectFields = parseTemplate(subject.join('\n'));
+      bodyFields = parseTemplate(body.join('\n'));
+      
       //pass key value pairs to render page for form creation
-      res.render('parseTemplate', { fields });
+      res.render('parseTemplate', { subjectFields, bodyFields, staticMailData, subject, body: body.join('\n') });
     });
   } else {
     res.status(400).send('Invalid file type');
   }
 });
 
-/* Mailto link generation must be redone for this version of code
-// Route to generate the mailto link from hardcoded email1 template
+function parseTemplate(template) {
+  const regex = /\{\@(.*?)\}/gs;
+  let match;
+  let fields = [];
+  while ((match = regex.exec(template)) !== null) {
+    fields.push(match[1]);
+  }
+
+  return fields.map(field => {
+    let [type, labelDefault] = field.split(':');
+    let [label, defaultValue] = labelDefault.split('|');
+    if (!defaultValue) {
+      defaultValue = '';
+    }
+    if (!label) {
+      // TODO: Handle error
+    }
+    return {
+      type: type.trim(),
+      label: label.trim(),
+      defaultValue: defaultValue.trim(),
+    };
+  });
+}
+
+// Route to generate the mailto link from user input
 app.post('/generate-email', (req, res) => {
-  const { TO, CC, SUBJECT, PROJECT_ID, DATE, SENDER } = req.body;
-
-  // Hardcode template structure with user input replacements
-  const subject = `Help Requested on ${DATE}`;
-  const body = `
-Hello David,
-
-Wanted to follow up on project ${PROJECT_ID} that needs an install on ${DATE}.
-
-Best regards,
-${SENDER}`;
-
-  // Generate the mailto link (hardcoded for email1.txt structure)
-  const mailtoLink = `mailto:${encodeURIComponent(TO)}?cc=${encodeURIComponent(CC)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const mailFields = getCleanFormData(req.body);
+  const body = req.body.body;
+  const subject = req.body.subject;
   
+  const { newBody, newSubject } = generateNewBodySubject(body, subject, mailFields);
+
+  const mailtoLink = `mailto:${encodeURIComponent(mailFields.staticMailData.TO)}?cc=${encodeURIComponent(mailFields.staticMailData.CC)}&bcc=${encodeURIComponent(mailFields.staticMailData.BCC)}&subject=${encodeURIComponent(newSubject)}&body=${encodeURIComponent(newBody)}`;
+
   res.redirect(mailtoLink);
-});*/
+});
+
+// Function to generate new body and subject with user input. Replace template fields with user input
+function generateNewBodySubject(body, subject, mailFields) {
+  let newBody = body;
+  let newSubject = subject;
+
+  for (const key in mailFields.bodyFields) {
+    const regex = /\{\@(.*?)\}/gs;
+    let match;
+    while ((match = regex.exec(newBody)) !== null) {
+      let field = match[1];
+      let [type, labelDefault] = field.split(':');
+      let [label, defaultValue] = labelDefault.split('|');
+      if (label.trim() === key) {
+        newBody = newBody.replace(match[0], mailFields.bodyFields[key]);
+      }
+    }
+  }
+
+  for (const key in mailFields.subjectFields) {
+    const regex = /\{\@(.*?)\}/gs;
+    let match;
+    while ((match = regex.exec(newSubject)) !== null) {
+      let field = match[1];
+      let [type, labelDefault] = field.split(':');
+      let [label, defaultValue] = labelDefault.split('|');
+      if (label.trim() === key) {
+        newSubject = newSubject.replace(match[0], mailFields.subjectFields[key]);
+      }
+    }
+  }
+
+  return { newBody, newSubject };
+}
+
+
+function getCleanFormData(formData) {
+  const staticMailData = {};
+  const subjectFields = {};
+  const bodyFields = {};
+
+  for (const key in formData) {
+    if (key.startsWith('static_')) {
+      staticMailData[key.replace('static_', '')] = formData[key];
+    } else if (key.startsWith('subject_')) {
+      subjectFields[key.replace('subject_', '')] = formData[key];
+    } else if (key.startsWith('body_')) {
+      bodyFields[key.replace('body_', '')] = formData[key];
+    }
+  }
+
+  const cleanJSON = {
+    staticMailData,
+    subjectFields,
+    bodyFields
+  };
+
+  return cleanJSON;
+}
 
 //Upload Logic
 app.get('/upload', (req, res) => {

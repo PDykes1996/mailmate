@@ -1,12 +1,13 @@
-{TO:'dbwesterhaus@ku.edu'}
-{CC:'[WHO TO CC?]'}
-{BCC:''}
-{SUBJECT:'Help Requested on [DATE]'}
+TO:'dbwesterhaus@ku.edu'
+CC:''
+BCC:''
+SUBJECT:'Help Requested on {@date: Date}'
 
-{BODY: 
+BODY:
 Hello David,
 
-Wanted to follow up on project [PROJECT ID] that needs an install on [DATE]. 
+Wanted to follow up on project {@text: Project ID} that needs an install on {@date: Date}. 
+Here is my email {@email: Email}
 
-Best regards,}
-
+Best regards,
+{@text: Name| Enter Name}

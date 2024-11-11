@@ -4,57 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Parse Template</title>
-  <style>
-    /* General Styles */
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f9;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 0;
-      padding: 20px;
-    }
-    
-    h1 {
-      font-size: 1.8em;
-      color: #333;
-      margin-bottom: 20px;
-    }
-
-    /* Button Container */
-    #buttons {
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    /* Button Styles */
-    #buttons a {
-      text-decoration: none;
-    }
-
-    #buttons button {
-      width: 100%;
-      padding: 15px;
-      font-size: 1em;
-      font-weight: bold;
-      color: #333;
-      background-color: #e8eaf6;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-      cursor: pointer;
-    }
-
-    #buttons button:hover {
-      background-color: #7986cb;
-      color: #fff;
-      border-color: #7986cb;
-    }
-  </style>
+  <link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+  >
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parse Template</title>
@@ -62,12 +15,33 @@
 <body>
     <h1>Parsed Input Fields</h1>
     <form action="/generate-email" method="post">
-        <% fields.forEach(field => { %>
-            <label for="<%= field.key %>"><%= field.key %>:</label>
-            <input type="text" id="<%= field.key %>" name="<%= field.key %>" value="<%= field.value %>" />
-            <br />
-        <% }) %>
-        <button type="submit">Generate Email</button>
+
+      <h2>Static Mail Data</h2>
+      <% for (let key in staticMailData) { %>
+        <label for="static_<%= key %>"><%= key %>:</label>
+        <input type="email" id="static_<%= key %>" name="static_<%= key %>" value="<%= staticMailData[key] %>" />
+        <br />
+      <% } %>
+  
+      <h2>Subject Fields</h2>
+      <% subjectFields.forEach(field => { %>
+        <label for="subject_<%= field.label %>"><%= field.label %>:</label>
+        <input type="<%= field.type %>" id="subject_<%= field.label %>" name="subject_<%= field.label %>" value="<%= field.defaultValue %>" />
+        <br />
+      <% }) %>
+  
+      <h2>Body Fields</h2>
+      <% bodyFields.forEach(field => { %>
+        <label for="body_<%= field.label %>"><%= field.label %>:</label>
+        <input type="<%= field.type %>" id="body_<%= field.label %>" name="body_<%= field.label %>" value="<%= field.defaultValue %>" />
+        <br />
+      <% }) %>
+
+      <!-- Hidden fields to store subject and body data -->
+      <input type="hidden" name="subject" value="<%= subject %>" />
+      <input type="hidden" name="body" value="<%= body %>" />
+
+      <button type="submit">Generate MailTo Link</button>
     </form>
 </body>
 </html>
