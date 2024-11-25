@@ -1,0 +1,136 @@
+/* Box sizing rules */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+/* Prevent font size inflation */
+html {
+	-moz-text-size-adjust: none;
+	-webkit-text-size-adjust: none;
+	text-size-adjust: none;
+}
+
+/* Remove default margin in favour of better control in authored CSS */
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd,
+pre {
+	/* margin-block-end: 0; */
+	margin: 0;
+}
+
+/* Remove list styles on ul, ol elements with a list role, which suggests default styling will be removed */
+ul[role="list"],
+ol[role="list"] {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+/* Set core body defaults */
+body {
+	min-height: 100vh;
+	line-height: 1.6;
+}
+
+/* Set shorter line heights on headings and interactive elements */
+h1,
+h2,
+h3,
+h4,
+button,
+input,
+label {
+	line-height: 1.1;
+}
+
+/* Balance text wrapping on headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	text-wrap: balance;
+}
+
+/* Make images easier to work with */
+img,
+picture {
+	max-width: 100%;
+	display: block;
+}
+
+/* Inherit fonts for inputs and buttons */
+input,
+button,
+textarea,
+select {
+	font-family: inherit;
+	font-size: inherit;
+}
+
+/* Make sure textareas without a rows attribute are not tiny */
+textarea:not([rows]) {
+	min-height: 10em;
+}
+
+/* Anything that has been anchored to should have extra scroll margin */
+:target {
+	scroll-margin-block: 5ex;
+}
+
+/* A elements that don't have a class get default styles */
+.link,
+a:not([class]) {
+	display: inline-block;
+	text-decoration-skip-ink: auto;
+	color: var(--clr-400);
+	transition: transform 0.5s cubic-bezier(0.2, 1, 0.8, 1), text-underline-offset 0.3s cubic-bezier(0.2, 1, 0.8, 1),
+		text-decoration 0.3s cubic-bezier(0.2, 1, 0.8, 1);
+	text-underline-offset: 5px;
+	text-decoration: 1px underline hsl(0, 0%, 60%);
+}
+
+/* add tooltip which appears on link hover */
+.link:hover::after {
+	content: attr(aria-label);
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 0.5em;
+	background-color: hsl(0, 0%, 10%);
+	color: hsl(0, 0%, 100%);
+	border-radius: 0.5em;
+	opacity: 0;
+	transition: opacity 0.2s ease-in-out;
+}
+
+.link:hover,
+a:not([class]):hover {
+	text-decoration: 2px underline var(--txt-1);
+	text-underline-offset: 7px;
+	/* transform: scale(0.95); */
+}
+
+abbr {
+	text-decoration: none;
+	border-bottom: 2px dotted hsl(0, 0%, 60%);
+	transition: border-color 0.2s ease-in-out;
+}
+
+abbr:hover {
+	border-color: hsl(0, 0%, 20%);
+}
