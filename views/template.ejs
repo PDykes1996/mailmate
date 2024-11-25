@@ -1,0 +1,110 @@
+<h1 class="fs:xl"><%= template.name %></h1>
+
+<form id="template" action="/generate-email" method="post" class="flow">
+	<div class="flow fields">
+		<label class="fw:medium" for="static_TO">Who are you sending this to?</label>
+		<div class="cluster">
+			<input
+				type="email"
+				id="static_TO"
+				name="static_TO"
+				value="<%= staticMailData.TO.defaultValue %>"
+				required
+			/>
+
+			<button id="ccFieldButton" type="button" onclick="toggleCcField()">Cc</button>
+			<button id="bccFieldButton" type="button" onclick="toggleBccField()">Bcc</button>
+		</div>
+		<div id="ccField" style="display: none" class="stack gap:-1">
+			<label class="fw:medium" for="static_CC"><%= staticMailData.CC.label %></label>
+			<input type="email" id="static_CC" name="static_CC" value="<%= staticMailData.CC.defaultValue %>" />
+		</div>
+
+		<div id="bccField" style="display: none" class="stack gap:-1">
+			<label class="fw:medium" for="static_BCC"><%= staticMailData.BCC.label %></label>
+			<input type="email" id="static_BCC" name="static_BCC" value="<%= staticMailData.BCC.defaultValue %>" />
+		</div>
+	</div>
+	<hr />
+
+	<h2 class="fs:lg fw:medium mb:3">Email Subject Fields</h2>
+
+	<% if (!subjectFields.length) { %>
+	<p>No subject fields available.</p>
+	<% } %>
+	<!--  -->
+	<% subjectFields.forEach(field => { %>
+	<div class="stack gap:-1 mt:2 fields">
+		<label class="fw:medium" for="subject_<%= field.label %>"><%= field.label %>:</label>
+		<input
+			type="<%= field.type %>"
+			id="subject_<%= field.label %>"
+			name="subject_<%= field.label %>"
+			value="<%= field.defaultValue %>"
+			required
+		/>
+	</div>
+	<% }) %>
+	<hr />
+
+	<h2 class="fs:lg fw:medium mb:3">Email Body Fields</h2>
+
+	<% if (!bodyFields.length) { %>
+	<p>No subject fields available.</p>
+	<% } %>
+	<!--  -->
+	<% bodyFields.forEach(field => { %>
+	<div class="stack gap:-1 mt:2 fields">
+		<label class="fw:medium" for="body_<%= field.label %>"><%= field.label %>:</label>
+		<input
+			type="<%= field.type %>"
+			id="body_<%= field.label %>"
+			name="body_<%= field.label %>"
+			value="<%= field.defaultValue %>"
+			required
+		/>
+	</div>
+	<% }) %>
+
+	<!-- Hidden fields to store subject and body data -->
+	<input type="hidden" name="subject" value="<%= subject %>" />
+	<input type="hidden" name="body" value="<%= emailBody %>" />
+
+	<br />
+
+	<div class="cluster mt:5" data-justify="space-between">
+		<button type="button" onclick="openPreviewDialog(`<%= emailBody %>`)">Preview Email 👀</button>
+		<button class="primary" type="submit">Generate Mailto Link</button>
+	</div>
+</form>
+
+<script>
+	const ccFieldButton = document.getElementById("ccFieldButton");
+	const bccFieldButton = document.getElementById("bccFieldButton");
+
+	const ccField = document.getElementById("ccField");
+	const bccField = document.getElementById("bccField");
+
+	function toggleCcField() {
+		ccFieldButton.style.backgroundColor = ccField.style.display === "none" ? "var(--bg-mute)" : "var(--bg-main)";
+		ccField.style.display = ccField.style.display === "none" ? "flex" : "none";
+		ccFieldButton.innerText = ccField.style.display === "none" ? "Cc" : "Hide Cc";
+	}
+
+	function toggleBccField() {
+		bccFieldButton.style.backgroundColor = bccField.style.display === "none" ? "var(--bg-mute)" : "var(--bg-main)";
+		bccField.style.display = bccField.style.display === "none" ? "flex" : "none";
+		bccFieldButton.innerText = bccField.style.display === "none" ? "Bcc" : "Hide Bcc";
+	}
+</script>
+
+<style>
+	h2 {
+		text-decoration: underline;
+		text-decoration-color: var(--clr-500);
+	}
+
+	.fields {
+		margin-inline: 0.15rem;
+	}
+</style>
