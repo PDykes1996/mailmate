@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+		<link rel="stylesheet" href="/css/style.css" />
+		<link rel="stylesheet" href="/css/reset.css" />
+		<script src="/js/modals.js" defer></script>
+		<script>
+			// Helper function
+			let domReady = (cb) => {
+				document.readyState === "interactive" || document.readyState === "complete"
+					? cb()
+					: document.addEventListener("DOMContentLoaded", cb);
+			};
+
+			domReady(() => {
+				// Display body when DOM is loaded
+				document.body.style.visibility = "visible";
+			});
+		</script>
+	</head>
+	<noscript
+		><style>
+			body {
+				visibility: visible !important;
+			}
+		</style></noscript
+	>
+	<body style="visibility: hidden">
+		<script>
+			0;
+		</script>
+		<!-- Modals -->
+		<%- include('../modals/delete-template.ejs') %><!-- Modals -->
+		<%- include('../modals/create-template.ejs') %><!-- Modals -->
+		<%- include('../modals/update-template.ejs') %><!-- Modals -->
+		<%- include('../modals/preview-template.ejs') %><!-- Modals -->
+
+		<div class="wrapper">
+			<%- include('../partials/header.ejs') %>
+			<main class="content flow"><%- body %></main>
+		</div>
+	</body>
+</html>

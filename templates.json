@@ -1,0 +1,14 @@
+{
+  "templates": [
+    {
+      "id": "0oagH",
+      "name": "Help Requested Email",
+      "body": "TO:'dbwesterhaus@ku.edu'\r\nCC:''\r\nBCC:''\r\nSUBJECT:'Help Requested on {@date: Date}'\r\n\r\nBODY:\r\nHello David,\r\n\r\nWanted to follow up on project {@text: Project ID} that needs an install on {@date: Date}. \r\nHere is my email {@email: Email}\r\n\r\nBest regards,\r\n{@text: Name| Enter Name}"
+    },
+    {
+      "id": "OgI9O",
+      "name": "Template Name",
+      "body": "BODY: \r\nHello World!"
+    }
+  ]
+}

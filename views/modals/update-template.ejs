@@ -1,0 +1,21 @@
+<dialog id="update-template">
+	<form action="/template/<id>?_method=PUT" method="POST" class="flow">
+		<header>
+			<h1 class="fs:xl">Update Template</h1>
+		</header>
+		<label class="stack">
+			<span class="fw:medium">Template Name</span>
+			<input type="text" name="name" value="" required autocomplete="off" />
+		</label>
+		<label class="stack">
+			<span class="fw:medium">Body</span>
+			<textarea name="body" required></textarea>
+		</label>
+		<footer class="cluster">
+			<div style="margin-left: auto">
+				<button type="button" class="secondary" data-close>Cancel</button>
+				<button type="submit" class="primary">Update</button>
+			</div>
+		</footer>
+	</form>
+</dialog>
