@@ -1,0 +1,23 @@
+<dialog id="create-template">
+	<form action="/template" method="post" class="flow">
+		<header>
+			<h1 class="fs:xl">Add Template</h1>
+		</header>
+		<div class="cluster">
+			<label class="stack">
+				<span>Template Name</span>
+				<input type="text" name="name" required />
+			</label>
+		</div>
+		<label class="stack">
+			<span>Body</span>
+			<textarea name="body" required></textarea>
+		</label>
+		<footer class="cluster">
+			<div style="margin-left: auto">
+				<button type="button" class="secondary" data-close>Cancel</button>
+				<button type="submit" class="primary">Add</button>
+			</div>
+		</footer>
+	</form>
+</dialog>
