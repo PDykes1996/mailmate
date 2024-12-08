@@ -6,21 +6,21 @@
 <h1 class="fs:xl">Templates</h1>
 
 <!-- Search Input -->
-<form action="/search" method="get">
-	<input type="text" name="q" placeholder="Search Templates" value="<%= query %>" />
+<form action="/search" method="get" class="cluster gap:-1">
+	<input type="text" name="q" placeholder="Search templates..." value="<%= query %>" />
 	<button>Search</button>
 </form>
 
 <% if (query.length) { %>
 <form action="/" method="get">
-	<button class="link">Clear Search</button>
+	<button class="btn-link">Clear Search</button>
 </form>
 <% } %>
 
 <div id="buttons" class="grid">
 	<% templates.forEach(template => { %>
 	<article class="box flow">
-		<header class="cluster" data-justify="space-between">
+		<header class="repel">
 			<h1 class="fs:md fw:semibold"><%= template.name %></h1>
 			<button class="no-style" onclick="openUpdateDialog(`<%= template.stringified %>`)">
 				<svg

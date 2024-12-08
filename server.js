@@ -47,6 +47,10 @@ app.get("/", async (_, res) => {
 	});
 });
 
+app.get("/guide", (_, res) => {
+	res.render("guide");
+});
+
 app.get("/template/:id", (req, res) => {
 	const { id } = req.params;
 
@@ -56,81 +60,17 @@ app.get("/template/:id", (req, res) => {
 		return res.status(404).send("Template not found");
 	}
 
-	const lines = template.body.split("\n");
-
-	let staticMailData = {
-		TO: {
-			label: "Who are you sending this to?",
-			defaultValue: "",
-		},
-		CC: {
-			label: "Who would you like to CC?",
-			defaultValue: "",
-		},
-		BCC: {
-			label: "Who would you like to BCC?",
-			defaultValue: "",
-		},
-	};
-	let subject = [];
-	let body = [];
-
-	lines.forEach((line) => {
-		// Split by first colon
-		const colonIndex = line.indexOf(":");
-		if (colonIndex === -1) {
-			return;
-		}
-		const key = line.slice(0, colonIndex);
-		const value = line.slice(colonIndex + 1);
-		if (key && value) {
-			const trimmedKey = key.trim().toUpperCase();
-			let trimmedValue = value.trim();
-			if (trimmedValue.startsWith("'") && trimmedValue.endsWith("'")) {
-				trimmedValue = trimmedValue.slice(1, -1);
-			}
-			if (staticMailData.hasOwnProperty(trimmedKey)) {
-				staticMailData[trimmedKey] = {
-					label: staticMailData[trimmedKey].label,
-					defaultValue: trimmedValue,
-				};
-			}
-			if (trimmedKey === "SUBJECT") {
-				subject.push(trimmedValue);
-			}
-		}
-	});
-
-	// Parse each line to extract BODY
-	let bodyFlag = false;
-	lines.forEach((line) => {
-		if (line.trim().toUpperCase() === "BODY:") {
-			bodyFlag = true;
-			return;
-		}
-		if (bodyFlag) {
-			body.push(line);
-		}
-	});
-
-	const subjectFields = parseTemplate(subject.join("\n"));
-	const bodyFields = parseTemplate(body.join("\n"));
-
-	//pass key value pairs to render page for form creation
 	res.render("template", {
 		template,
 		stringified: sanitizeJSON(JSON.stringify(template)),
-		subjectFields,
-		bodyFields,
-		staticMailData,
-		subject,
-		emailBody: body.join("\n"),
+		subject: template.subject,
+		emailBody: template.body,
 	});
 });
 
-app.put("/template/:id", (req, res) => {
+app.put("/template/:id", async (req, res) => {
 	const { id } = req.params;
-	const { name, subject, body } = req.body;
+	const { name, to, cc, bcc, subject, body } = req.body;
 
 	const template = templates.find((template) => template.id === id);
 
@@ -139,30 +79,72 @@ app.put("/template/:id", (req, res) => {
 	}
 
 	template.name = name;
+	template.to = to;
+	template.cc = cc;
+	template.bcc = bcc;
 	template.subject = subject;
 	template.body = body;
 
-	db.write();
+	template.fields = extractDynamicFields(`${subject}${body}`);
+
+	await db.write();
 
 	res.redirect("/");
 });
 
-app.post("/template", (req, res) => {
-	const { name, subject, body } = req.body;
+const extractDynamicFields = (content) => {
+	content = content.trim();
+
+	const regex = /\{@(.*?):(.*?)\}/gm;
+	const fields = [];
+
+	const matches = content.match(regex);
+
+	for (let match of new Set(matches)) {
+		const dup = match.slice(1, -1);
+		const [type, body] = dup.split(":");
+		const [label, value = ""] = body.split("|");
+
+		fields.push({ id: match, type: type.replace("@", ""), label: label.trim(), value: value.trim() });
+	}
+
+	return fields;
+};
+
+const replaceDynamicFields = (content, fields) => {
+	let newContent = content;
+
+	for (const [id, value] of Object.entries(fields)) {
+		newContent = newContent.replaceAll(id, value);
+	}
+
+	return newContent;
+};
+
+app.post("/template", async (req, res) => {
+	const { name, to, cc, bcc, subject, body } = req.body;
+
+	const id = nanoId();
+
+	const fields = extractDynamicFields(`${subject}${body}`);
 
 	templates.push({
-		id: nanoId(),
+		id,
 		name,
+		to,
+		cc,
+		bcc,
 		subject,
 		body,
+		fields,
 	});
 
-	db.write();
+	await db.write();
 
 	res.redirect("/");
 });
 
-app.delete("/template/:id", (req, res) => {
+app.delete("/template/:id", async (req, res) => {
 	const { id } = req.params;
 
 	const index = templates.findIndex((template) => template.id === id);
@@ -173,7 +155,7 @@ app.delete("/template/:id", (req, res) => {
 
 	templates.splice(index, 1);
 
-	db.write();
+	await db.write();
 
 	res.redirect("/");
 });
@@ -190,118 +172,43 @@ function sanitizeJSON(unsanitized) {
 		.replace(/\&/g, "\\&");
 }
 
-function parseTemplate(template) {
-	const regex = /\{\@(.*?)\}/gs;
-	let match;
-	let fields = [];
-	while ((match = regex.exec(template)) !== null) {
-		fields.push(match[1]);
+app.post("/generate", (req, res) => {
+	const { templateId } = req.query;
+	const { to, cc, bcc, ...fields } = req.body;
+
+	const template = templates.find((template) => template.id === templateId);
+
+	if (!template) {
+		return res.status(404).send("Template not found");
 	}
 
-	return fields.map((field) => {
-		let [type, labelDefault] = field.split(":");
-		let [label, defaultValue] = labelDefault.split("|");
-		if (!defaultValue) {
-			defaultValue = "";
+	for (const field of template.fields) {
+		if (!fields[field.id]) {
+			return res.status(400).send(`Field ${field.label} is required`);
 		}
-		if (!label) {
-			// TODO: Handle error
-		}
-		return {
-			type: type.trim(),
-			label: label.trim(),
-			defaultValue: defaultValue.trim(),
-		};
-	});
-}
+	}
 
-app.post("/generate-email", (req, res) => {
-	const mailFields = getCleanFormData(req.body);
-	const body = req.body.body;
-	const subject = req.body.subject;
+	const subject = replaceDynamicFields(template.subject, fields);
+	const body = replaceDynamicFields(template.body, fields);
 
-	const { newBody, newSubject } = generateNewBodySubject(body, subject, mailFields);
-
-	const mailtoLink = `mailto:${encodeURIComponent(mailFields.staticMailData.TO)}?cc=${encodeURIComponent(
-		mailFields.staticMailData.CC
-	)}&bcc=${encodeURIComponent(mailFields.staticMailData.BCC)}&subject=${encodeURIComponent(
-		newSubject
-	)}&body=${encodeURIComponent(newBody)}`;
+	const e = encodeURIComponent;
+	const mailtoLink = `mailto:${e(to)}?cc=${e(cc)}&bcc=${e(bcc)}&subject=${e(subject)}&body=${e(body)}`;
 
 	res.redirect(mailtoLink);
 });
-
-function generateNewBodySubject(body, subject, mailFields) {
-	let newBody = body;
-	let newSubject = subject;
-
-	for (const key in mailFields.bodyFields) {
-		const regex = /\{\@(.*?)\}/gs;
-		let match;
-		while ((match = regex.exec(newBody)) !== null) {
-			let field = match[1];
-			let [type, labelDefault] = field.split(":");
-			let [label, defaultValue] = labelDefault.split("|");
-			if (label.trim() === key) {
-				newBody = newBody.replace(match[0], mailFields.bodyFields[key]);
-			}
-		}
-	}
-
-	for (const key in mailFields.subjectFields) {
-		const regex = /\{\@(.*?)\}/gs;
-		let match;
-		while ((match = regex.exec(newSubject)) !== null) {
-			let field = match[1];
-			let [type, labelDefault] = field.split(":");
-			let [label, defaultValue] = labelDefault.split("|");
-			if (label.trim() === key) {
-				newSubject = newSubject.replace(match[0], mailFields.subjectFields[key]);
-			}
-		}
-	}
-
-	return { newBody, newSubject };
-}
-
-function getCleanFormData(formData) {
-	const staticMailData = {};
-	const subjectFields = {};
-	const bodyFields = {};
-
-	for (const key in formData) {
-		if (key.startsWith("static_")) {
-			staticMailData[key.replace("static_", "")] = formData[key];
-		} else if (key.startsWith("subject_")) {
-			subjectFields[key.replace("subject_", "")] = formData[key];
-		} else if (key.startsWith("body_")) {
-			bodyFields[key.replace("body_", "")] = formData[key];
-		}
-	}
-
-	const cleanJSON = {
-		staticMailData,
-		subjectFields,
-		bodyFields,
-	};
-
-	return cleanJSON;
-}
 
 app.get("/search", (req, res) => {
 	const query = req.query.q.toLowerCase();
 
 	const searchResults = templates.filter((template) => {
 		return (
-			template.name.includes(query) || // Add more fields to search
-			template.body.includes(query)
+			template.name.toLowerCase().includes(query) ||
+			template.body.toLowerCase().includes(query) ||
+			template.subject.toLowerCase().includes(query)
 		);
 	});
 
-	return res.render("home", {
-		query,
-		templates: searchResults,
-	});
+	return res.render("home", { query, templates: searchResults });
 });
 
 app.listen(port, () => {
