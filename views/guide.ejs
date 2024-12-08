@@ -1,0 +1,43 @@
+<h2 id="custom-template-formatting">Custom Template Formatting</h2>
+<p>To generate dynamic input fields, use the following format:</p>
+<p><code>{@type:Label|Placeholder}</code></p>
+<ul>
+	<li><strong>type:</strong> The type of the HTML input element.</li>
+	<li><strong>Label:</strong> The label for the input field.</li>
+	<li><strong>Placeholder:</strong> The default value or placeholder for the input field. (Optional)</li>
+</ul>
+<h3 id="examples-of-dynamic-input-fields">Examples of Dynamic Input Fields</h3>
+<ol>
+	<li>
+		<p><strong>Text Input:</strong></p>
+		<ul>
+			<li>Format: <code>{@text:Receiver|Customer}</code></li>
+			<li>
+				Generates:
+				<code>&lt;input type=&quot;text&quot; name=&quot;Receiver&quot; value=&quot;Customer&quot;&gt;</code>
+			</li>
+		</ul>
+	</li>
+	<li>
+		<p><strong>Date Input:</strong></p>
+		<ul>
+			<li>Format: <code>{@date:Delivery Date|2018-07-22}</code></li>
+			<li>
+				Generates:
+				<code
+					>&lt;input type=&quot;date&quot; name=&quot;Delivery Date&quot;
+					value=&quot;2018-07-22&quot;&gt;</code
+				>
+			</li>
+		</ul>
+	</li>
+	<li>
+		<p><strong>Email Input:</strong></p>
+		<ul>
+			<li>Format: <code>{@email:Email}</code></li>
+			<li>
+				Generates: <code>&lt;input type=&quot;email&quot; name=&quot;Email&quot; value=&quot;&quot;&gt;</code>
+			</li>
+		</ul>
+	</li>
+</ol>

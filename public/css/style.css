@@ -8,7 +8,6 @@
 @import "https://unpkg.com/open-props";
 
 body {
-	/* font-family: Piazzolla, Georgia, serif; */
 	font-family: Inter, Georgia, serif;
 }
 
@@ -292,32 +291,6 @@ body {
 	margin-bottom: var(--space-3xl);
 }
 
-/* Border Radius */
-
-.rounded\:sm {
-	border-radius: 0.25rem;
-}
-
-.rounded\:md {
-	border-radius: 0.5rem;
-}
-
-.rounded\:lg {
-	border-radius: 0.75rem;
-}
-
-.rounded\:xl {
-	border-radius: 1rem;
-}
-
-.rounded\:md-tr {
-	border-top-right-radius: 0.5rem;
-}
-
-.rounded\:md-br {
-	border-bottom-right-radius: 0.5rem;
-}
-
 /* Typography */
 
 h5,
@@ -444,18 +417,6 @@ a.box:not(.invert):hover {
 	gap: var(--space, var(--space-m));
 }
 
-[data-justify="space-between"] {
-	--justify: space-between;
-}
-
-[data-justify="center"] {
-	--justify: center;
-}
-
-[data-wrap="nowrap"] {
-	--wrap: nowrap;
-}
-
 .stack {
 	display: flex;
 	flex-direction: column;
@@ -476,35 +437,22 @@ a.box:not(.invert):hover {
 
 /* Utilities */
 
-.jc\:center {
-	justify-content: center;
-}
-
-.ai\:center {
-	align-items: center;
-}
-
 .wrapper {
 	max-width: 53rem;
-	padding-inline: 1.25rem;
-	margin-inline: auto;
-}
-
-.content {
-	padding-inline: var(--space-2xl);
+	padding-inline: var(--space-m);
 	padding-block: var(--space-l);
 	margin-inline: auto;
 }
 
-@media (max-width: 768px) {
-	.content {
-		padding-inline: 2rem;
-	}
+.content {
+	padding-inline: var(--space-m);
+	padding-block: var(--space-2xl);
 }
 
-blockquote {
-	padding-inline: 1.5rem;
-	border-left: 0.25rem solid var(--bg-border);
+@media (max-width: 768px) {
+	.content {
+		padding-inline: var(--space-xs);
+	}
 }
 
 /* default form styles */
@@ -533,10 +481,15 @@ button:hover {
 	background-color: var(--bg-mute);
 }
 
-button.link {
+button.btn-link {
 	all: unset;
 	display: inline-block;
-	color: var(--clr-400);
+	color: var(--clr-600);
+}
+
+button.btn-link:hover {
+	cursor: pointer;
+	color: var(--clr-500);
 }
 
 button.no-style {
@@ -557,6 +510,7 @@ button.error:hover {
 }
 
 button.primary {
+	border: 1px solid var(--clr-400);
 	background-color: var(--clr-400);
 	color: var(--txt-1);
 }
@@ -568,7 +522,6 @@ button.primary:hover {
 /* dialogs */
 
 dialog {
-	min-width: 45vw;
 	display: block;
 	inset: 0;
 	z-index: var(--layer-important);
@@ -595,4 +548,43 @@ dialog:not([open]) {
 dialog::backdrop {
 	background-color: hsla(0, 0%, 0%, 0.5);
 	backdrop-filter: blur(0.15rem);
+}
+
+/* @media (max-width: 768px) {
+	dialog {
+		min-width: 100vw;
+		min-height: 40vh;
+		top: auto;
+		animation: var(--animation-slide-out-down) backwards;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	dialog {
+		animation: none;
+	}
+} */
+
+mark {
+	background-color: hsla(186, 100%, 24%, 0.75);
+}
+
+mark.error {
+	background-color: hsla(0, 100%, 30%, 0.75);
+}
+
+mark.error::after {
+	content: " (missing)";
+}
+
+/* code styling */
+
+code {
+	font-family: "JetBrains Mono", monospace;
+	font-size: var(--step--1);
+	background-color: hsl(230, 15%, 25%);
+
+	color: var(--txt-1);
+	padding: 0.1em 0.25em;
+	border-radius: var(--radius-xs);
 }

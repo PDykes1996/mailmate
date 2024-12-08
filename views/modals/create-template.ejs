@@ -1,18 +1,11 @@
-<dialog id="create-template">
+<dialog id="create-template" class="cluster" style="--wrap: nowrap">
 	<form action="/template" method="post" class="flow">
 		<header>
-			<h1 class="fs:xl">Add Template</h1>
+			<h1 class="fs:xl">Create Template</h1>
 		</header>
-		<div class="cluster">
-			<label class="stack">
-				<span>Template Name</span>
-				<input type="text" name="name" required />
-			</label>
-		</div>
-		<label class="stack">
-			<span>Body</span>
-			<textarea name="body" required></textarea>
-		</label>
+
+		<%- include('../partials/template-form.ejs') %>
+
 		<footer class="cluster">
 			<div style="margin-left: auto">
 				<button type="button" class="secondary" data-close>Cancel</button>
@@ -21,3 +14,54 @@
 		</footer>
 	</form>
 </dialog>
+
+<script>
+	const ccField2Btn = document.getElementById("ccField2Button");
+	const bccField2Bton = document.getElementById("bccField2Btn");
+
+	const ccField2 = document.getElementById("ccField2");
+	const bccField2 = document.getElementById("bccField2");
+
+	function toggleccField2() {
+		ccField2Btn.style.backgroundColor = ccField2.style.display === "none" ? "var(--bg-mute)" : "var(--bg-main)";
+		ccField2.style.display = ccField2.style.display === "none" ? "flex" : "none";
+		ccField2Btn.innerText = ccField2.style.display === "none" ? "Cc" : "Hide Cc";
+	}
+
+	function toggleBccField2() {
+		bccField2Bton.style.backgroundColor = bccField2.style.display === "none" ? "var(--bg-mute)" : "var(--bg-main)";
+		bccField2.style.display = bccField2.style.display === "none" ? "flex" : "none";
+		bccField2Bton.innerText = bccField2.style.display === "none" ? "Bcc" : "Hide Bcc";
+	}
+
+	const tagBank = document.querySelector(".tag-bank");
+
+	const formInputTypes = [
+		"text",
+		"email",
+		"password",
+		"number",
+		"tel",
+		"url",
+		"date",
+		"month",
+		"week",
+		"time",
+		"color",
+		"search",
+		"range",
+	];
+</script>
+
+<style>
+	.tag-bank {
+		position: absolute;
+		padding: 1rem;
+		border-radius: 0.5rem;
+		display: none;
+		width: 100%;
+		max-height: 200px;
+		overflow-y: auto;
+		background-color: var(--bg-mute);
+	}
+</style>

@@ -1,14 +1,33 @@
 {
   "templates": [
     {
-      "id": "0oagH",
-      "name": "Help Requested Email",
-      "body": "TO:'dbwesterhaus@ku.edu'\r\nCC:''\r\nBCC:''\r\nSUBJECT:'Help Requested on {@date: Date}'\r\n\r\nBODY:\r\nHello David,\r\n\r\nWanted to follow up on project {@text: Project ID} that needs an install on {@date: Date}. \r\nHere is my email {@email: Email}\r\n\r\nBest regards,\r\n{@text: Name| Enter Name}"
-    },
-    {
-      "id": "OgI9O",
-      "name": "Template Name",
-      "body": "BODY: \r\nHello World!"
+      "id": "y7KFb",
+      "name": "First Email Template",
+      "to": "",
+      "cc": "",
+      "bcc": "",
+      "subject": "First Email Template",
+      "body": "This is an example of a template. \r\n\r\nTemplates can be plain text and also include what we call \"Dynamic Fields\" \r\n\r\nFor example, if your email is a shipping update. You can include the id, tracking number, estimated delivery date, and customer name. \r\n\r\nThese are fields which change from email to email. \r\n\r\nExample: \r\n\r\nHello {@text: What is the name of the user?},\r\n\r\nYour package has been shipped and should arrive on: {@date: When will the package be delivered?}.\r\n\r\nHere is your tacking number: {@text: What is the tracking number?}\r\n\r\nBest,\r\nCompany",
+      "fields": [
+        {
+          "id": "{@text: What is the name of the user?}",
+          "type": "text",
+          "label": "What is the name of the user?",
+          "value": ""
+        },
+        {
+          "id": "{@date: When will the package be delivered?}",
+          "type": "date",
+          "label": "When will the package be delivered?",
+          "value": ""
+        },
+        {
+          "id": "{@text: What is the tracking number?}",
+          "type": "text",
+          "label": "What is the tracking number?",
+          "value": ""
+        }
+      ]
     }
   ]
 }

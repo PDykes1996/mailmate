@@ -1,10 +1,18 @@
 <header>
-	<nav>
-		<ul>
-			<li><strong>My Mail Mate</strong></li>
+	<nav class="repel">
+		<ul role="list">
+			<li>
+				<a href="/" class="no-style cluster">
+					<img src="/img/mail_mate_logo.png" alt="Decorative Logo" class="logo" />
+					<strong class="brand-name">My Mail Mate</strong>
+				</a>
+			</li>
 		</ul>
-		<ul>
-			<li><a href="/">Templates</a></li>
+		<ul role="list" class="cluster">
+			<li><a href="/" class="">Templates</a></li>
+			<div class="divider"></div>
+			<li><a href="/guide" class="">Guide</a></li>
+			<li><a href="https://github.com/myMailMate/mailmate/tree/main" target="_blank" class="">GitHub</a></li>
 		</ul>
 	</nav>
 </header>
@@ -15,23 +23,33 @@
 		color: var(--txt-1);
 	}
 
-	nav {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	ul {
-		display: flex;
-		list-style: none;
-	}
-
 	a {
 		text-decoration: none;
 		color: var(--txt-1);
 	}
 
+	a.no-style {
+		text-decoration: none;
+	}
+
 	a:hover {
 		text-decoration: underline;
+	}
+
+	.logo {
+		width: 1.75rem;
+		height: auto;
+	}
+
+	@media screen and (max-width: 500px) {
+		.brand-name {
+			display: none;
+		}
+	}
+
+	.divider {
+		width: 1px;
+		height: 1rem;
+		background-color: gray;
 	}
 </style>

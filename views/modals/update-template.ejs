@@ -3,14 +3,9 @@
 		<header>
 			<h1 class="fs:xl">Update Template</h1>
 		</header>
-		<label class="stack">
-			<span class="fw:medium">Template Name</span>
-			<input type="text" name="name" value="" required autocomplete="off" />
-		</label>
-		<label class="stack">
-			<span class="fw:medium">Body</span>
-			<textarea name="body" required></textarea>
-		</label>
+
+		<%- include('../partials/template-form.ejs') %>
+
 		<footer class="cluster">
 			<div style="margin-left: auto">
 				<button type="button" class="secondary" data-close>Cancel</button>
