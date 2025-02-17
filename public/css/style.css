@@ -29,6 +29,8 @@ body {
 
 	--txt-1: hsl(230, 15%, 100%);
 	--txt-2: hsl(230, 15%, 90%);
+
+	--dialog-parent-wrapper-width: 100px;
 }
 
 body {
@@ -442,6 +444,7 @@ a.box:not(.invert):hover {
 	padding-inline: var(--space-m);
 	padding-block: var(--space-l);
 	margin-inline: auto;
+	height: 100vh;
 }
 
 .content {
@@ -525,8 +528,6 @@ dialog {
 	display: block;
 	inset: 0;
 	z-index: var(--layer-important);
-	max-inline-size: min(90vw, var(--size-content-3));
-	max-block-size: min(80vh, 100%);
 	overflow: hidden;
 	transition: opacity 0.5s;
 	animation: var(--animation-scale-down) forwards;
@@ -534,6 +535,8 @@ dialog {
 	border: 1px solid var(--bg-border);
 	border-radius: var(--radius-s);
 	background-color: var(--bg-main);
+	width: var(--dialog-parent-wrapper-width);
+	animation: var(--animation-slide-out-down) forwards;
 }
 
 dialog[open] {
@@ -543,27 +546,13 @@ dialog[open] {
 dialog:not([open]) {
 	pointer-events: none;
 	opacity: 0;
+	display: none;
 }
 
 dialog::backdrop {
 	background-color: hsla(0, 0%, 0%, 0.5);
 	backdrop-filter: blur(0.15rem);
 }
-
-/* @media (max-width: 768px) {
-	dialog {
-		min-width: 100vw;
-		min-height: 40vh;
-		top: auto;
-		animation: var(--animation-slide-out-down) backwards;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	dialog {
-		animation: none;
-	}
-} */
 
 mark {
 	background-color: hsla(186, 100%, 24%, 0.75);

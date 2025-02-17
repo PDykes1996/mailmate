@@ -2,6 +2,7 @@ const createDialog = document.getElementById("create-template");
 const updateDialog = document.getElementById("update-template");
 const deleteDialog = document.getElementById("delete-template");
 const previewDialog = document.getElementById("preview-template");
+const labelPlaceholderModal = document.getElementById("label-placeholder-modal");
 
 const closeButtons = document.querySelectorAll("[data-close]");
 
@@ -11,32 +12,84 @@ closeButtons.forEach((button) => {
 		updateDialog.close();
 		deleteDialog.close();
 		previewDialog.close();
+		labelPlaceholderModal.close();
 	});
 });
 
-createDialog.addEventListener("click", (event) => {
-	if (event.target === createDialog) {
-		createDialog.close();
-	}
+// Store the selected tag type (like "text", "email", etc.)
+let selectedType = "";
+
+// Open the label/placeholder modal
+function openLabelPlaceholderModal() {
+	labelPlaceholderModal.showModal();
+	document.getElementById("tagLabel").value = ""; // Reset values
+	document.getElementById("tagPlaceholder").value = "";
+}
+
+// Insert the dynamic tag based on the user's input
+function insertAtCursor(input, text) {
+	const start = input.selectionStart;
+	const end = input.selectionEnd;
+	const before = input.value.substring(0, start);
+	const after = input.value.substring(end);
+
+	input.value = before + text + after;
+	input.selectionStart = input.selectionEnd = start + text.length;
+	input.focus();
+}
+
+// Handle the insert action on modal submit
+document.getElementById("insertTag").addEventListener("click", () => {
+	const label = document.getElementById("tagLabel").value.trim() || "Field";
+	const placeholder = document.getElementById("tagPlaceholder").value.trim();
+
+	// Create the dynamic tag based on the label and placeholder
+	let tag = `{@${selectedType}:${label}`;
+	if (placeholder) tag += `|${placeholder}`;
+	tag += "}";
+
+	// Insert the tag into the email body (or anywhere appropriate)
+	const emailBodyInput = document.querySelector("textarea[name='body']");
+	insertAtCursor(emailBodyInput, tag);
+	labelPlaceholderModal.close(); // Close modal after insertion
 });
 
-updateDialog.addEventListener("click", (event) => {
-	if (event.target === updateDialog) {
-		updateDialog.close();
-	}
-});
+// Function to create the tag buttons dynamically
+function generateTags() {
+	const tagBank = document.querySelector(".tags"); // The container where tags are stored
+	const formInputTypes = [
+		"text",
+		"email",
+		"password",
+		"number",
+		"tel",
+		"url",
+		"date",
+		"month",
+		"week",
+		"time",
+		"color",
+		"search",
+		"range",
+	];
 
-deleteDialog.addEventListener("click", (event) => {
-	if (event.target === deleteDialog) {
-		deleteDialog.close();
-	}
-});
+	formInputTypes.forEach((type) => {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.classList.add("tag");
+		button.dataset.type = type;
+		button.textContent = type.charAt(0).toUpperCase() + type.slice(1); // Capitalize first letter
+		button.addEventListener("click", (event) => {
+			selectedType = event.target.dataset.type; // Store selected type
+			openLabelPlaceholderModal(); // Open the modal to edit the label/placeholder
+		});
 
-previewDialog.addEventListener("click", (event) => {
-	if (event.target === previewDialog) {
-		previewDialog.close();
-	}
-});
+		tagBank.appendChild(button);
+	});
+}
+
+// Call the function to generate tags when the page loads
+generateTags();
 
 const openCreateDialog = () => {
 	createDialog.showModal();
