@@ -1,4 +1,4 @@
-<dialog id="create-template" class="cluster" style="--wrap: nowrap">
+<dialog id="create-template" class="cluster" style="--wrap: nowrap; --align: flex-start">
 	<form action="/template" method="post" class="flow">
 		<header>
 			<h1 class="fs:xl">Create Template</h1>
@@ -13,6 +13,34 @@
 			</div>
 		</footer>
 	</form>
+
+	<div class="tag-bank stack">
+		<h4 class="fw:medium">Insert a dynamic field:</h4>
+		<div class="divider-horizontal"></div>
+
+		<div class="tags cluster" style="--wrap: wrap; --align: center"></div>
+		<div class="divider-horizontal"></div>
+		<p>
+			<small> <strong>Tip:</strong> Click on a field to insert it where your cursor is. </small>
+		</p>
+	</div>
+</dialog>
+
+<dialog id="label-placeholder-modal" class="stack" style="max-width: 400px">
+	<h3 class="fw:medium">Edit Dynamic Tag</h3>
+
+	<div class="stack">
+		<label for="tagLabel" class="fw:medium">Label:</label>
+		<input type="text" id="tagLabel" name="tagLabel" placeholder="Enter Label" required />
+
+		<label for="tagPlaceholder" class="fw:medium">Placeholder:</label>
+		<input type="text" id="tagPlaceholder" name="tagPlaceholder" placeholder="Enter Placeholder (optional)" />
+	</div>
+
+	<footer class="cluster gap-1" style="margin-top: 1rem">
+		<button type="button" class="secondary" id="cancelModal">Cancel</button>
+		<button type="button" class="primary" id="insertTag">Insert Tag</button>
+	</footer>
 </dialog>
 
 <script>
@@ -33,35 +61,4 @@
 		bccField2.style.display = bccField2.style.display === "none" ? "flex" : "none";
 		bccField2Bton.innerText = bccField2.style.display === "none" ? "Bcc" : "Hide Bcc";
 	}
-
-	const tagBank = document.querySelector(".tag-bank");
-
-	const formInputTypes = [
-		"text",
-		"email",
-		"password",
-		"number",
-		"tel",
-		"url",
-		"date",
-		"month",
-		"week",
-		"time",
-		"color",
-		"search",
-		"range",
-	];
 </script>
-
-<style>
-	.tag-bank {
-		position: absolute;
-		padding: 1rem;
-		border-radius: 0.5rem;
-		display: none;
-		width: 100%;
-		max-height: 200px;
-		overflow-y: auto;
-		background-color: var(--bg-mute);
-	}
-</style>

@@ -16,8 +16,17 @@
 			};
 
 			domReady(() => {
-				// Display body when DOM is loaded
 				document.body.style.visibility = "visible";
+
+				const root = document.querySelector(":root");
+				const wrapper = document.querySelector(".wrapper");
+
+				const resizeObserver = new ResizeObserver((entries) => {
+					const width = entries[0].contentRect.width;
+					root.style.setProperty("--dialog-parent-wrapper-width", `${width}px`);
+				});
+
+				resizeObserver.observe(wrapper);
 			});
 		</script>
 	</head>
@@ -32,13 +41,14 @@
 		<script>
 			0;
 		</script>
-		<!-- Modals -->
-		<%- include('../modals/delete-template.ejs') %><!-- Modals -->
-		<%- include('../modals/create-template.ejs') %><!-- Modals -->
-		<%- include('../modals/update-template.ejs') %><!-- Modals -->
-		<%- include('../modals/preview-template.ejs') %><!-- Modals -->
 
 		<div class="wrapper">
+			<!-- Modals -->
+			<%- include('../modals/delete-template.ejs') %><!-- Modals -->
+			<%- include('../modals/create-template.ejs') %><!-- Modals -->
+			<%- include('../modals/update-template.ejs') %><!-- Modals -->
+			<%- include('../modals/preview-template.ejs') %><!-- Modals -->
+
 			<%- include('../partials/header.ejs') %>
 			<main class="content flow"><%- body %></main>
 		</div>
