@@ -1,7 +1,7 @@
+import Database from "better-sqlite3";
 import express, { urlencoded } from "express";
 import expressLayouts from "express-ejs-layouts";
 import expressUploads from "express-fileupload";
-import { JSONFilePreset } from "lowdb/node";
 import expressMethodOverride from "method-override";
 import { join } from "path";
 
@@ -17,7 +17,6 @@ app.use(expressMethodOverride("_method"));
 app.use(urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-// not secure, but it's fine for this project
 app.use((req, res, next) => {
 	res.removeHeader("Content-Security-Policy");
 	next();
@@ -28,33 +27,80 @@ app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
 app.set("layout", "layouts/layout");
 
-// Local Database
-const db = await JSONFilePreset("templates.json", {
-	templates: [],
-});
+// Database setup
+const db = new Database("./templates.db");
 
-const { templates } = db.data;
+const schema = `
+	CREATE TABLE IF NOT EXISTS "templates" (
+		"id" TEXT PRIMARY KEY,
+		"name" TEXT NOT NULL,
+		"to" TEXT NOT NULL,
+		"cc" TEXT,
+		"bcc" TEXT,
+		"subject" TEXT NOT NULL,
+		"body" TEXT NOT NULL,
+		"fields" TEXT
+	);
 
+	CREATE TABLE IF NOT EXISTS users (
+		id TEXT PRIMARY KEY,
+		username TEXT NOT NULL,
+		password TEXT NOT NULL
+	);
+`;
+
+db.exec(schema);
+
+// Database helper methods
+const getTemplates = () => {
+	const templates = db.prepare('SELECT * FROM "templates"').all();
+	return templates.map((template) => ({
+		...template,
+		fields: JSON.parse(template.fields),
+		stringified: sanitizeJSON(JSON.stringify({ ...template, fields: JSON.parse(template.fields) })),
+	}));
+};
+
+const getTemplate = (id) => {
+	const template = db.prepare('SELECT * FROM "templates" WHERE "id" = ?').get(id);
+	if (template) {
+		template.fields = JSON.parse(template.fields);
+		template.stringified = sanitizeJSON(JSON.stringify(template));
+	}
+	return template;
+};
+
+const createTemplate = (template) => {
+	const { id, name, to, cc, bcc, subject, body, fields } = template;
+	db.prepare(
+		'INSERT INTO "templates" ("id", "name", "to", "cc", "bcc", "subject", "body", "fields") VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+	).run(id, name, to, cc, bcc, subject, body, JSON.stringify(fields));
+};
+
+const updateTemplate = (id, template) => {
+	const { name, to, cc, bcc, subject, body, fields } = template;
+	db.prepare(
+		'UPDATE "templates" SET "name" = ?, "to" = ?, "cc" = ?, "bcc" = ?, "subject" = ?, "body" = ?, "fields" = ? WHERE "id" = ?'
+	).run(name, to, cc, bcc, subject, body, JSON.stringify(fields), id);
+};
+
+const deleteTemplate = (id) => {
+	db.prepare('DELETE FROM "templates" WHERE "id" = ?').run(id);
+};
+
+// Routes
 app.get("/", async (_, res) => {
-	res.render("home", {
-		templates: templates.map((template) => {
-			return {
-				...template,
-				stringified: sanitizeJSON(JSON.stringify(template)),
-			};
-		}),
-		query: "",
-	});
+	const templates = getTemplates();
+	res.render("home", { templates, query: "" });
 });
 
 app.get("/guide", (_, res) => {
 	res.render("guide");
 });
 
-app.get("/template/:id", (req, res) => {
+app.get("/template/:id", async (req, res) => {
 	const { id } = req.params;
-
-	const template = templates.find((template) => template.id === id);
+	const template = getTemplate(id);
 
 	if (!template) {
 		return res.status(404).send("Template not found");
@@ -62,7 +108,7 @@ app.get("/template/:id", (req, res) => {
 
 	res.render("template", {
 		template,
-		stringified: sanitizeJSON(JSON.stringify(template)),
+		stringified: template.stringified,
 		subject: template.subject,
 		emailBody: template.body,
 	});
@@ -72,111 +118,55 @@ app.put("/template/:id", async (req, res) => {
 	const { id } = req.params;
 	const { name, to, cc, bcc, subject, body } = req.body;
 
-	const template = templates.find((template) => template.id === id);
+	const template = getTemplate(id);
 
 	if (!template) {
 		return res.status(404).send("Template not found");
 	}
 
-	template.name = name;
-	template.to = to;
-	template.cc = cc;
-	template.bcc = bcc;
-	template.subject = subject;
-	template.body = body;
+	const fields = extractDynamicFields(`${subject}${body}`);
 
-	template.fields = extractDynamicFields(`${subject}${body}`);
-
-	await db.write();
+	updateTemplate(id, { name, to, cc, bcc, subject, body, fields });
 
 	res.redirect("/");
 });
 
-const extractDynamicFields = (content) => {
-	content = content.trim();
-
-	const regex = /\{@(.*?):(.*?)\}/gm;
-	const fields = [];
-
-	const matches = content.match(regex);
-
-	for (let match of new Set(matches)) {
-		const dup = match.slice(1, -1);
-		const [type, body] = dup.split(":");
-		const [label, value = ""] = body.split("|");
-
-		fields.push({ id: match, type: type.replace("@", ""), label: label.trim(), value: value.trim() });
-	}
-
-	return fields;
-};
-
-const replaceDynamicFields = (content, fields) => {
-	let newContent = content;
-
-	for (const [id, value] of Object.entries(fields)) {
-		newContent = newContent.replaceAll(id, value);
-	}
-
-	return newContent;
-};
-
 app.post("/template", async (req, res) => {
 	const { name, to, cc, bcc, subject, body } = req.body;
-
 	const id = nanoId();
-
 	const fields = extractDynamicFields(`${subject}${body}`);
 
-	templates.push({
-		id,
-		name,
-		to,
-		cc,
-		bcc,
-		subject,
-		body,
-		fields,
-	});
-
-	await db.write();
+	createTemplate({ id, name, to, cc, bcc, subject, body, fields });
 
 	res.redirect("/");
 });
 
 app.delete("/template/:id", async (req, res) => {
 	const { id } = req.params;
-
-	const index = templates.findIndex((template) => template.id === id);
-
-	if (index === -1) {
-		return res.status(404).send("Template not found");
-	}
-
-	templates.splice(index, 1);
-
-	await db.write();
-
+	deleteTemplate(id);
 	res.redirect("/");
 });
 
-function sanitizeJSON(unsanitized) {
-	return unsanitized
-		.replace(/\\/g, "\\\\")
-		.replace(/\n/g, "\\n")
-		.replace(/\r/g, "\\r")
-		.replace(/\t/g, "\\t")
-		.replace(/\f/g, "\\f")
-		.replace(/"/g, '\\"')
-		.replace(/'/g, "\\'")
-		.replace(/\&/g, "\\&");
-}
+app.get("/search", async (req, res) => {
+	const query = req.query.q.toLowerCase();
+	const templates = getTemplates();
 
-app.post("/generate", (req, res) => {
+	const searchResults = templates.filter((template) => {
+		return (
+			template.name.toLowerCase().includes(query) ||
+			template.body.toLowerCase().includes(query) ||
+			template.subject.toLowerCase().includes(query)
+		);
+	});
+
+	return res.render("home", { query, templates: searchResults });
+});
+
+app.post("/generate", async (req, res) => {
 	const { templateId } = req.query;
 	const { to, cc, bcc, ...fields } = req.body;
 
-	const template = templates.find((template) => template.id === templateId);
+	const template = getTemplate(templateId);
 
 	if (!template) {
 		return res.status(404).send("Template not found");
@@ -197,23 +187,42 @@ app.post("/generate", (req, res) => {
 	res.redirect(mailtoLink);
 });
 
-app.get("/search", (req, res) => {
-	const query = req.query.q.toLowerCase();
+// Helper functions
+const extractDynamicFields = (content) => {
+	content = content.trim();
+	const regex = /\{@(.*?):(.*?)\}/gm;
+	const fields = [];
+	const matches = content.match(regex);
 
-	const searchResults = templates.filter((template) => {
-		return (
-			template.name.toLowerCase().includes(query) ||
-			template.body.toLowerCase().includes(query) ||
-			template.subject.toLowerCase().includes(query)
-		);
-	});
+	for (let match of new Set(matches)) {
+		const dup = match.slice(1, -1);
+		const [type, body] = dup.split(":");
+		const [label, value = ""] = body.split("|");
+		fields.push({ id: match, type: type.replace("@", ""), label: label.trim(), value: value.trim() });
+	}
 
-	return res.render("home", { query, templates: searchResults });
-});
+	return fields;
+};
 
-app.listen(port, () => {
-	console.log(`App listening at http://localhost:${port}`);
-});
+const replaceDynamicFields = (content, fields) => {
+	let newContent = content;
+	for (const [id, value] of Object.entries(fields)) {
+		newContent = newContent.replaceAll(id, value);
+	}
+	return newContent;
+};
+
+const sanitizeJSON = (unsanitized) => {
+	return unsanitized
+		.replace(/\\/g, "\\\\")
+		.replace(/\n/g, "\\n")
+		.replace(/\r/g, "\\r")
+		.replace(/\t/g, "\\t")
+		.replace(/\f/g, "\\f")
+		.replace(/"/g, '\\"')
+		.replace(/'/g, "\\'")
+		.replace(/\&/g, "\\&");
+};
 
 const nanoId = (length = 5) => {
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -224,3 +233,7 @@ const nanoId = (length = 5) => {
 	}
 	return str;
 };
+
+app.listen(port, () => {
+	console.log(`App listening at http://localhost:${port}`);
+});
