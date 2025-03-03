@@ -1,5 +1,9 @@
+import { ExpressAuth, getSession } from "@auth/express";
+import Credentials from "@auth/express/providers/credentials";
 import Database from "better-sqlite3";
-import express, { urlencoded } from "express";
+import crypto from "crypto";
+import "dotenv/config";
+import express, { json, urlencoded } from "express"; // Import json middleware
 import expressLayouts from "express-ejs-layouts";
 import expressUploads from "express-fileupload";
 import expressMethodOverride from "method-override";
@@ -10,48 +14,139 @@ const __dirname = import.meta.dirname;
 const app = express();
 const port = 3000;
 
+const secret = process.env.AUTH_SECRET;
+
+if (!secret) {
+	console.error("AUTH_SECRET is not set! Authentication may not work correctly.");
+	process.exit(1); // Exit if AUTH_SECRET is missing in production
+}
+
+// Database setup
+const db = new Database("./data.db");
+
+const schema = `
+    CREATE TABLE IF NOT EXISTS "templates" (
+        "id" TEXT PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "to" TEXT NOT NULL,
+        "cc" TEXT,
+        "bcc" TEXT,
+        "subject" TEXT NOT NULL,
+        "body" TEXT NOT NULL,
+        "fields" TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS "users" (
+        "id" TEXT PRIMARY KEY,
+        "email" TEXT NOT NULL UNIQUE,
+        "password" TEXT NOT NULL
+    );
+`;
+
+db.exec(schema);
+
 // Middleware
 app.use(expressLayouts);
 app.use(expressUploads());
 app.use(expressMethodOverride("_method"));
 app.use(urlencoded({ extended: true }));
+app.use(json()); // Add json middleware
 app.use(express.static("public"));
 
-app.use((req, res, next) => {
-	res.removeHeader("Content-Security-Policy");
+/**
+ * @type {import("@auth/express").ExpressAuthConfig}
+ */
+const authConfig = {
+	secret,
+	trustHost: true,
+	pages: {
+		signIn: "/login", // Custom sign-in page
+	},
+	providers: [
+		Credentials({
+			credentials: {
+				email: { label: "Email", type: "text" },
+				password: { label: "Password", type: "password" },
+			},
+			async authorize(credentials, req) {
+				if (!credentials?.email || !credentials?.password) {
+					return null;
+				}
+				const user = getUser(credentials.email);
+
+				if (!user) {
+					return null;
+				}
+
+				const [storedHash, salt] = user.password.split(":");
+
+				if (!storedHash || !salt) {
+					console.error("Invalid password format in database.");
+					return null;
+				}
+
+				const isValid = verifyPassword(credentials.password, salt, storedHash);
+
+				if (isValid) {
+					// **IMPORTANT**: Return a user object that MUST contain `id` and `email`
+					return { id: user.id, email: user.email };
+				} else {
+					return null;
+				}
+			},
+		}),
+	],
+	debug: true, // Enable debug logs for troubleshooting
+};
+
+const authSession = async (req, res, next) => {
+	res.locals.session = await getSession(req, authConfig);
 	next();
-});
+};
+
+app.use("/auth/*", ExpressAuth(authConfig));
+
+app.use(authSession);
 
 // Express Settings
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "views"));
 app.set("layout", "layouts/layout");
+app.set("trust proxy", true);
 
-// Database setup
-const db = new Database("./templates.db");
+// Helper functions
+const saltAndHashPassword = (password) => {
+	const salt = crypto.randomBytes(16).toString("hex");
+	const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
+	return { salt, hash };
+};
 
-const schema = `
-	CREATE TABLE IF NOT EXISTS "templates" (
-		"id" TEXT PRIMARY KEY,
-		"name" TEXT NOT NULL,
-		"to" TEXT NOT NULL,
-		"cc" TEXT,
-		"bcc" TEXT,
-		"subject" TEXT NOT NULL,
-		"body" TEXT NOT NULL,
-		"fields" TEXT
-	);
+const verifyPassword = (password, salt, storedHash) => {
+	const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, "sha512").toString("hex");
+	return storedHash === hash;
+};
 
-	CREATE TABLE IF NOT EXISTS users (
-		id TEXT PRIMARY KEY,
-		username TEXT NOT NULL,
-		password TEXT NOT NULL
-	);
-`;
-
-db.exec(schema);
+const nanoId = (length = 5) => {
+	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	let str = "";
+	for (let i = 0; i < length; i++) {
+		const randomIndex = Math.floor(Math.random() * chars.length);
+		str += chars[randomIndex];
+	}
+	return str;
+};
 
 // Database helper methods
+const getUser = (email) => {
+	return db.prepare('SELECT * FROM "users" WHERE "email" = ?').get(email);
+};
+
+const addUser = (email, password) => {
+	const { salt, hash } = saltAndHashPassword(password);
+	const id = nanoId();
+	db.prepare('INSERT INTO "users" ("id", "email", "password") VALUES (?, ?, ?)').run(id, email, `${hash}:${salt}`);
+};
+
 const getTemplates = () => {
 	const templates = db.prepare('SELECT * FROM "templates"').all();
 	return templates.map((template) => ({
@@ -88,7 +183,50 @@ const deleteTemplate = (id) => {
 	db.prepare('DELETE FROM "templates" WHERE "id" = ?').run(id);
 };
 
+// Authentication middleware
+const authenticatedUser = async (req, res, next) => {
+	const session = res.locals.session ?? (await getSession(req, authConfig));
+	if (!session?.user) {
+		res.redirect("/login");
+	} else {
+		next();
+	}
+};
+
 // Routes
+app.get("/login", (req, res) => {
+	if (res.locals.session?.user) {
+		return res.redirect("/");
+	}
+	res.render("login");
+});
+
+app.get("/signup", (req, res) => {
+	if (res.locals.session?.user) {
+		return res.redirect("/");
+	}
+	res.render("signup");
+});
+
+app.post("/signup", (req, res) => {
+	const { email, password } = req.body;
+
+	try {
+		addUser(email, password);
+		res.redirect("/login");
+	} catch (error) {
+		console.log({ error });
+		res.status(400).render("signup", { error: "Error registering user. Email may already exist." });
+	}
+});
+
+app.get("/logout", (req, res) => {
+	res.redirect("/auth/signout");
+});
+
+// Protected routes
+app.use(authenticatedUser);
+
 app.get("/", async (_, res) => {
 	const templates = getTemplates();
 	res.render("home", { templates, query: "" });
@@ -167,7 +305,6 @@ app.post("/generate", async (req, res) => {
 	const { to, cc, bcc, ...fields } = req.body;
 
 	const template = getTemplate(templateId);
-
 	if (!template) {
 		return res.status(404).send("Template not found");
 	}
@@ -187,7 +324,7 @@ app.post("/generate", async (req, res) => {
 	res.redirect(mailtoLink);
 });
 
-// Helper functions
+// Additional helper functions
 const extractDynamicFields = (content) => {
 	content = content.trim();
 	const regex = /\{@(.*?):(.*?)\}/gm;
@@ -200,7 +337,6 @@ const extractDynamicFields = (content) => {
 		const [label, value = ""] = body.split("|");
 		fields.push({ id: match, type: type.replace("@", ""), label: label.trim(), value: value.trim() });
 	}
-
 	return fields;
 };
 
@@ -222,16 +358,6 @@ const sanitizeJSON = (unsanitized) => {
 		.replace(/"/g, '\\"')
 		.replace(/'/g, "\\'")
 		.replace(/\&/g, "\\&");
-};
-
-const nanoId = (length = 5) => {
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	let str = "";
-	for (let i = 0; i < length; i++) {
-		const randomIndex = Math.floor(Math.random() * chars.length);
-		str += chars[randomIndex];
-	}
-	return str;
 };
 
 app.listen(port, () => {
